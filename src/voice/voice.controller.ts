@@ -1,7 +1,8 @@
-import { Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path/win32';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 
 import { VoiceService } from './voice.service';
 
@@ -10,6 +11,7 @@ export class VoiceController {
   constructor(private readonly voiceService: VoiceService) {}
 
   @Post('transcribe')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -18,7 +20,7 @@ export class VoiceController {
       }),
     }),
   )
-  async transcribeAudio(@UploadedFile('file') file: Express.Multer.File) {
-    return await this.voiceService.transcribeAudio(file.path);
+  async transcribeAudio(@UploadedFile('file') file: Express.Multer.File, @Req() req: any) {
+    return await this.voiceService.transcribeAudio(req.user.id, file.path);
   }
 }
