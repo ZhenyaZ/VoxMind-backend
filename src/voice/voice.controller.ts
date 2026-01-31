@@ -21,6 +21,7 @@ export class VoiceController {
     }),
   )
   async transcribeAudio(@UploadedFile('file') file: Express.Multer.File, @Req() req: any) {
+    console.log(file);
     return await this.voiceService.transcribeAudio(req.user.id, file.path);
   }
 }

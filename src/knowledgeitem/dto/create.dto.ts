@@ -1,4 +1,4 @@
-import { IsBoolean, IsDate, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsDate, IsEnum, IsOptional, IsString } from 'class-validator';
 import { Users } from 'src/entities/User.entity';
 
 export default class CreateKnowledgeItemDto {
@@ -16,6 +16,10 @@ export default class CreateKnowledgeItemDto {
   @IsDate()
   @IsOptional()
   dueDate?: Date;
+  @IsArray()
+  @IsOptional()
+  tags?: [string];
+  embedding?: number[];
   @IsDate()
   createdAt: Date;
 }

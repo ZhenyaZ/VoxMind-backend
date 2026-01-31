@@ -22,7 +22,7 @@ export class AuthController {
     const tokens = await this.authService.login(email, password);
     res.cookie('accessToken', tokens.accessToken, { httpOnly: true, secure: true, sameSite: 'none' });
     res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true, secure: true, sameSite: 'none' });
-    return res.sendStatus(200);
+    return res.send({ accessToken: tokens.accessToken, user: tokens.user });
   }
   @Get('refresh')
   @UseGuards(RefreshJwtAuthGuard)

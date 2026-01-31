@@ -30,8 +30,10 @@ export class VoiceService {
     });
     const classifiedAudio = await this.classifyAudio(transcription.text);
     if (!classifiedAudio.isQuestion) {
+      const embedding = await this.getEmbedding(classifiedAudio.content);
       const createKnowledeItemDto = {
         ...classifiedAudio,
+        embedding,
         user: user,
       };
       const createdKnowledgeItem = await this.knowledgeitemService.createKnowledgeItem(createKnowledeItemDto);
@@ -40,11 +42,9 @@ export class VoiceService {
       }
       return { transcription: transcription.text, message: 'Knowledge item created successfully' };
     } else {
-      const searchResult = await this.knowledgeitemService.searchKnowledgeItem({
-        user: user,
-        subject: classifiedAudio.subject,
-      });
-      return { transcription: transcription.text, searchResult: searchResult || 'No relevant information found' };
+      const queryVector = await this.getEmbedding(transcription.text);
+      const searchResult = await this.knowledgeitemService.semanticSearch(user, queryVector);
+      return { transcription: transcription.text, searchResult };
     }
   }
 
@@ -53,39 +53,28 @@ export class VoiceService {
     const dateContext = `Today: ${now.toISOString()} (weekday: ${now.toLocaleDateString('en-US', { weekday: 'long' })})`;
 
     const prompt = `
-You are a data analyst. Your task is to transform the input text into a strictly structured JSON object of type KnowledgeItem.
+You are an expert Semantic Analyst. Your goal is to extract structured knowledge from the raw input text.
 
-TIME CONTEXT:
-${dateContext}  // Use this context to compute reminder due dates.
+CURRENT TIME CONTEXT: "${dateContext}"
+Use this context to resolve relative dates like "tomorrow", "next Friday", "in 2 hours".
 
-JSON FORMATTING RULES:
-1. type: 
-   - "reminder" — if the text describes an action that must be done.
-   - "fact" — if the text contains information about a location or event.
-2. subject: one lowercase word representing the main topic (e.g., "keys", "home", "work").
-3. location: a specific place mentioned in the text (e.g., "cabinet", "kitchen", "car"). Fill this if present.
-4. content: the full original text, unmodified.
-6. isQuestion: true if the text is a question; false if it is a statement or command.
-5. dueDate: 
-   - If type = "reminder" — compute the exact date/time in ISO 8601 using dateContext.
-   - If type = "fact" — always null.
-All fields must be in a language which the input text is in.
-JSON REQUIREMENTS:
-- Return **only JSON**, no extra explanations or text.
-- All fields must be present; use null if data is missing.
-- Example JSON:
+STRICT OUTPUT FORMAT (JSON ONLY):
+Return a single JSON object with no markdown formatting (no \`\`\`json).
 
-{
-  "type": "reminder",
-  "content": "Go to the store to buy milk",
-  "subject": "store",
-  "location": "kitchen",
-  "isQuestion": false,
-  "dueDate": "2026-01-26T12:00:00.000Z",
-  "createdAt": "2026-01-26T21:00:00.000Z"
-}
+FIELDS SPECIFICATION:
+1. type: "reminder" (if action required) OR "fact" (if informational/memory).
+2. subject: The main topic (noun phrase, 1-3 lowercase words, e.g., "house keys", "meeting", "grocery").
+3. location: Specific place mentioned (e.g., "kitchen drawer", "office"). Null if not present.
+4. content: The original input text, cleaned up (capitalized first letter).
+5. isQuestion: boolean.
+6. dueDate: ISO 8601 string (e.g., "2024-02-20T14:00:00.000Z") if type is "reminder". If type is "fact", MUST be null.
+7. tags: Array of 1-3 strings (lowercase keywords for filtering, e.g., ["work", "urgent"]).
 
-TEXT TO ANALYZE: "${text}"
+RULES:
+- If the text is in Russian, all extracted fields (subject, tags, location) must be in Russian.
+- Keep "dueDate" in UTC.
+
+INPUT TEXT: "${text}"
 `;
 
     const response = await this.client.chat.completions.create({
@@ -99,6 +88,15 @@ TEXT TO ANALYZE: "${text}"
     });
 
     const content = response.choices[0].message?.content || '{}';
+    console.log(JSON.parse(content));
     return JSON.parse(content);
+  }
+
+  async getEmbedding(text: string) {
+    const response = await this.client.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: text,
+    });
+    return response.data[0].embedding;
   }
 }

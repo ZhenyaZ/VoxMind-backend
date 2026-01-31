@@ -1,4 +1,5 @@
 import { Entity, Enum, ManyToOne, PrimaryKey, Property } from '@mikro-orm/core';
+import { VectorType } from 'src/types/VectorType';
 
 import { Users } from './User.entity';
 
@@ -28,6 +29,10 @@ export class KnowledgeItem {
   @Property({ nullable: true })
   dueDate?: Date;
 
+  @Property({ nullable: true })
+  tags?: [string];
+  @Property({ type: new VectorType(), nullable: true })
+  embedding?: number[];
   @Property()
   createdAt: Date = new Date();
 }

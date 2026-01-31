@@ -2,6 +2,7 @@ import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { KnowledgeItem } from 'src/entities/KnowledgeItem.entity';
+import { Users } from 'src/entities/User.entity';
 
 import CreateKnowledgeItemDto from './dto/create.dto';
 import SearchKnowledgeItemDto from './dto/search.dto';
@@ -26,5 +27,22 @@ export class KnowledgeitemService {
       subject: { $like: `%${subject}%` },
     });
     return searchResults[0]?.content || null;
+  }
+  async semanticSearch(user: Users, queryVector: number[]) {
+    const vectorString = `[${queryVector.join(',')}]`;
+
+    const items = await this.knowledgeItemRepository.getEntityManager().execute(
+      `
+    SELECT id, subject, content, type, 
+           (embedding <=> ?::vector) as distance
+    FROM knowledge_item
+    WHERE user_id = ?
+    ORDER BY distance ASC
+    LIMIT 3;
+  `,
+      [vectorString, user.id],
+    );
+
+    return items;
   }
 }
