@@ -29,6 +29,8 @@ export class AuthService {
       email,
       name: name,
       password: passwordHash,
+      locale: registerDto.locale,
+      timezone: registerDto.timezone,
     });
 
     return this.issueTokens(user.id, user);
@@ -44,7 +46,7 @@ export class AuthService {
     if (!isValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
-
+    user.password = '';
     return this.issueTokens(user.id, user);
   }
 

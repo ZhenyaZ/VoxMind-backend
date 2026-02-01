@@ -1,4 +1,4 @@
-import { Entity, Enum, ManyToOne, PrimaryKey, Property } from '@mikro-orm/core';
+import { Cascade, Entity, Enum, ManyToOne, PrimaryKey, Property } from '@mikro-orm/core';
 import { VectorType } from 'src/types/VectorType';
 
 import { Users } from './User.entity';
@@ -8,7 +8,7 @@ export class KnowledgeItem {
   @PrimaryKey()
   id: number;
 
-  @ManyToOne(() => Users)
+  @ManyToOne(() => Users, { cascade: [Cascade.REMOVE] })
   user: Users;
 
   @Enum(() => ['reminder', 'fact'])
@@ -33,6 +33,8 @@ export class KnowledgeItem {
   tags?: [string];
   @Property({ type: new VectorType(), nullable: true })
   embedding?: number[];
-  @Property()
-  createdAt: Date = new Date();
+  @Property({ type: 'timestamptz', onCreate: () => new Date() })
+  createdAt?: Date = new Date();
+  @Property({ type: 'timestamptz', onUpdate: () => new Date() })
+  updatedAt?: Date = new Date();
 }

@@ -3,6 +3,7 @@ import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { KnowledgeItem } from 'src/entities/KnowledgeItem.entity';
 import { Users } from 'src/entities/User.entity';
+import { ConvertDistanceToPercentage } from 'src/utils/distanceToPercentage';
 
 import CreateKnowledgeItemDto from './dto/create.dto';
 import SearchKnowledgeItemDto from './dto/search.dto';
@@ -28,7 +29,18 @@ export class KnowledgeitemService {
     });
     return searchResults[0]?.content || null;
   }
-  async semanticSearch(user: Users, queryVector: number[]) {
+  async semanticSearch(
+    user: Users,
+    queryVector: number[],
+  ): Promise<
+    {
+      id: number;
+      subject: string;
+      content: string;
+      type: string;
+      distance: number;
+    }[]
+  > {
     const vectorString = `[${queryVector.join(',')}]`;
 
     const items = await this.knowledgeItemRepository.getEntityManager().execute(
@@ -42,7 +54,9 @@ export class KnowledgeitemService {
   `,
       [vectorString, user.id],
     );
-
-    return items;
+    items.forEach((item) => {
+      item.score = ConvertDistanceToPercentage(item.distance);
+    });
+    return items as { id: number; subject: string; content: string; type: string; distance: number; score: string }[];
   }
 }

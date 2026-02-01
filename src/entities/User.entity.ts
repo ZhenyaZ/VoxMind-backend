@@ -13,6 +13,10 @@ export class Users {
   name: string;
   @Property()
   password: string;
+  @Property({ nullable: false, default: 'en-EN' })
+  locale: string;
+  @Property({ nullable: false, default: 'Europe/Berlin' })
+  timezone: string;
   @Property({ nullable: true })
   provider?: string;
 
@@ -21,6 +25,10 @@ export class Users {
 
   @Property({ nullable: true })
   profilePictureUrl?: string;
-  @OneToMany(() => KnowledgeItem, (knowledgeItem) => knowledgeItem.user)
+  @Property({ type: 'timestamptz', onCreate: () => new Date() })
+  createdAt?: Date = new Date();
+  @Property({ type: 'timestamptz', onUpdate: () => new Date() })
+  updatedAt?: Date = new Date();
+  @OneToMany(() => KnowledgeItem, (knowledgeItem) => knowledgeItem.user, { orphanRemoval: true })
   knowledgeItems = new Collection<KnowledgeItem>(this);
 }

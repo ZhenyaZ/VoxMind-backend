@@ -20,6 +20,4 @@ export default class CreateKnowledgeItemDto {
   @IsOptional()
   tags?: [string];
   embedding?: number[];
-  @IsDate()
-  createdAt: Date;
 }
