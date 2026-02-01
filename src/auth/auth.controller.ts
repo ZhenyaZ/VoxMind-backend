@@ -24,7 +24,7 @@ export class AuthController {
     const tokens = await this.authService.login(email, password);
     res.cookie('accessToken', tokens.accessToken, { httpOnly: true, secure: true, sameSite: 'none' });
     res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true, secure: true, sameSite: 'none' });
-    return res.send({ accessToken: tokens.accessToken, user: tokens.user });
+    return res.send({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, user: tokens.user });
   }
   @Get('refresh')
   @UseGuards(RefreshJwtAuthGuard)
@@ -32,7 +32,7 @@ export class AuthController {
     const tokens = await this.authService.refreshTokens(req.user.id);
     res.cookie('accessToken', tokens.accessToken, { httpOnly: true, secure: true, sameSite: 'none' });
     res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true, secure: true, sameSite: 'none' });
-    return res.sendStatus(200);
+    return res.status(200).send({ accessToken: tokens.accessToken });
   }
 
   @Get('logout')

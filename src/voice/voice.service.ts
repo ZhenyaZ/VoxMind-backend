@@ -70,7 +70,10 @@ export class VoiceService {
         if (!createdKnowledgeItem) {
           throw new Error('Failed to create knowledge item');
         }
-        return { transcription: transcription.text, answer: 'Knowledge created successfully' };
+        return {
+          transcription: transcription.text,
+          answer: "Everything is saved. Is there anything else you'd like me to remember?",
+        };
       } else {
         const queryVector = await this.getEmbedding(transcription.text);
         const searchResult = await this.knowledgeitemService.semanticSearch(user, queryVector);

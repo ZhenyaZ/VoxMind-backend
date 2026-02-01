@@ -12,6 +12,7 @@ import SearchKnowledgeItemDto from './dto/search.dto';
 export class KnowledgeitemService {
   constructor(
     @InjectRepository(KnowledgeItem) private readonly knowledgeItemRepository: EntityRepository<KnowledgeItem>,
+    @InjectRepository(Users) private readonly usersRepository: EntityRepository<Users>,
     private readonly em: EntityManager,
   ) {}
 
@@ -58,5 +59,17 @@ export class KnowledgeitemService {
       item.score = ConvertDistanceToPercentage(item.distance);
     });
     return items as { id: number; subject: string; content: string; type: string; distance: number; score: string }[];
+  }
+
+  async getKnowledgeItems(userId: string) {
+    const user = await this.usersRepository.findOne({ id: userId });
+    const items = await this.knowledgeItemRepository.find(
+      { user: user },
+      { exclude: ['embedding', 'isQuestion', 'updatedAt', 'user', 'location', 'subject', 'dueDate'] },
+    );
+    return items;
+  }
+  async deleteKnowledgeItem(itemId: number) {
+    return await this.knowledgeItemRepository.nativeDelete({ id: itemId });
   }
 }
