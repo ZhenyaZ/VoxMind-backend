@@ -1,9 +1,10 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { KnowledgeItem } from 'src/entities/KnowledgeItem.entity';
 import { Users } from 'src/entities/User.entity';
 import { ConvertDistanceToPercentage } from 'src/utils/distanceToPercentage';
+import { VoiceService } from 'src/voice/voice.service';
 
 import CreateKnowledgeItemDto from './dto/create.dto';
 import SearchKnowledgeItemDto from './dto/search.dto';
@@ -13,6 +14,8 @@ export class KnowledgeitemService {
   constructor(
     @InjectRepository(KnowledgeItem) private readonly knowledgeItemRepository: EntityRepository<KnowledgeItem>,
     @InjectRepository(Users) private readonly usersRepository: EntityRepository<Users>,
+    @Inject(forwardRef(() => VoiceService))
+    private readonly voiceService: VoiceService,
     private readonly em: EntityManager,
   ) {}
 
@@ -71,5 +74,35 @@ export class KnowledgeitemService {
   }
   async deleteKnowledgeItem(itemId: number) {
     return await this.knowledgeItemRepository.nativeDelete({ id: itemId });
+  }
+
+  async updateKnowledgeItem(itemId: number, content: string) {
+    console.log(itemId);
+    const item = await this.knowledgeItemRepository.findOne({ id: itemId });
+    if (!item) {
+      throw new NotFoundException(`Knowledge item ${itemId} not found`);
+    }
+
+    const updatedClassified = await this.voiceService.classifyAudio(content);
+
+    const rawTags = updatedClassified.tags;
+    const validatedTags = Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags] : [];
+
+    const contentForEmbedding = updatedClassified.content ?? content;
+    const updatedEmbeddings = await this.voiceService.getEmbedding(contentForEmbedding);
+
+    const updateData = {
+      ...updatedClassified,
+      content: content,
+      subject: updatedClassified.subject,
+      location: updatedClassified.location || null,
+      tags: validatedTags,
+      embedding: updatedEmbeddings,
+    };
+
+    this.em.assign(item, updateData);
+    await this.em.flush();
+
+    return item;
   }
 }

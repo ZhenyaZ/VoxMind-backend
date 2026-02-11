@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI, { toFile } from 'openai';
 import { KnowledgeitemService } from 'src/knowledgeitem/knowledgeitem.service';
@@ -37,6 +37,7 @@ export class VoiceService {
   private client: OpenAI;
   constructor(
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => KnowledgeitemService))
     private readonly knowledgeitemService: KnowledgeitemService,
     private readonly userService: UserService,
   ) {
