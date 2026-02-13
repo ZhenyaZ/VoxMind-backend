@@ -1,10 +1,10 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI, { toFile } from 'openai';
 import { KnowledgeitemService } from 'src/knowledgeitem/knowledgeitem.service';
 import { UserService } from 'src/user/user.service';
 
-const TAGS = [
+export const TAGS = [
   'note',
   'idea',
   'task',
@@ -30,7 +30,17 @@ const TAGS = [
   'important',
   'later',
   'archive',
-];
+] as const;
+export type Tag = (typeof TAGS)[number];
+interface ClassifiedResponse {
+  type: 'reminder' | 'fact';
+  subject: string;
+  content: string;
+  isQuestion: boolean;
+  tags: Tag[];
+  dueDate?: Date;
+  location?: string;
+}
 
 @Injectable()
 export class NLPService {
@@ -45,12 +55,49 @@ export class NLPService {
       apiKey: this.configService.get<string>('OPENAI_API_KEY'),
     });
   }
+  async processText(user_id: string, content: string) {
+    try {
+      const user = await this.userService.findById(user_id);
+      if (!user) throw new NotFoundException('User not found');
+
+      const classified = await this.classifyAudio(content);
+      const rawTags = classified.tags;
+      const validatedTags: Tag[] = Array.isArray(rawTags)
+        ? rawTags.filter((tag): tag is Tag => TAGS.includes(tag as Tag))
+        : [];
+      if (!classified.isQuestion) {
+        const embedding = await this.getEmbedding(classified.content);
+        const createKnowledgeItemPayload = {
+          ...classified,
+          tags: validatedTags,
+          embedding,
+          user: user,
+        };
+        const createdKnowledgeItem = await this.knowledgeitemService.createKnowledgeItem(createKnowledgeItemPayload);
+        if (!createdKnowledgeItem) {
+          throw new Error('Failed to create knowledge item');
+        }
+        return {
+          transcription: classified.content,
+          answer: "Everything is saved. Is there anything else you'd like me to remember?",
+        };
+      } else {
+        const queryVector = await this.getEmbedding(classified.content);
+        const searchResult = await this.knowledgeitemService.semanticSearch(user, queryVector);
+        const b = await this.generateAnswer(classified.content, searchResult);
+        return { answer: b, transcription: classified.content };
+      }
+    } catch (error) {
+      console.error('Error while processing text: ', error);
+      throw new InternalServerErrorException('Something happen wrong. Sorry');
+    }
+  }
 
   async transcribeAudio(user_id: string, file: Express.Multer.File) {
     try {
       const user = await this.userService.findById(user_id);
       if (!user) {
-        throw new Error('User not found');
+        throw new NotFoundException('User not found');
       }
       const transcription = await this.client.audio.transcriptions.create({
         file: await toFile(file.buffer, 'audio.m4a'),
@@ -58,16 +105,18 @@ export class NLPService {
       });
       const classifiedAudio = await this.classifyAudio(transcription.text);
       const rawTags = classifiedAudio.tags;
-      const validatedTags = Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags] : [];
+      const validatedTags: Tag[] = Array.isArray(rawTags)
+        ? rawTags.filter((tag): tag is Tag => TAGS.includes(tag as Tag))
+        : [];
       if (!classifiedAudio.isQuestion) {
         const embedding = await this.getEmbedding(classifiedAudio.content);
-        const createKnowledeItemDto = {
+        const createKnowledgeItemPayload = {
           ...classifiedAudio,
           tags: validatedTags,
           embedding,
           user: user,
         };
-        const createdKnowledgeItem = await this.knowledgeitemService.createKnowledgeItem(createKnowledeItemDto);
+        const createdKnowledgeItem = await this.knowledgeitemService.createKnowledgeItem(createKnowledgeItemPayload);
         if (!createdKnowledgeItem) {
           throw new Error('Failed to create knowledge item');
         }
@@ -163,7 +212,7 @@ No references to context or notes.`;
     return response.choices[0].message.content;
   }
 
-  async classifyAudio(text: string): Promise<any> {
+  async classifyAudio(text: string): Promise<ClassifiedResponse> {
     const now = new Date();
     const dateContext = `Today: ${now.toISOString()} (weekday: ${now.toLocaleDateString('en-US', { weekday: 'long' })})`;
 
