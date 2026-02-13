@@ -5,8 +5,8 @@ import { JwtStrategy } from 'src/auth/strategies/jwt.strategy';
 import { KnowledgeitemModule } from 'src/knowledgeitem/knowledgeitem.module';
 import { UserModule } from 'src/user/user.module';
 
-import { VoiceController } from './voice.controller';
-import { VoiceService } from './voice.service';
+import { NLPController } from './nlp.controller';
+import { NLPService } from './nlp.service';
 
 @Module({
   imports: [
@@ -15,8 +15,8 @@ import { VoiceService } from './voice.service';
     forwardRef(() => KnowledgeitemModule),
     UserModule,
   ],
-  controllers: [VoiceController],
-  providers: [VoiceService, JwtStrategy],
-  exports: [VoiceService],
+  controllers: [NLPController],
+  providers: [NLPService, JwtStrategy],
+  exports: [NLPService],
 })
-export class VoiceModule {}
+export class NLPModule {}

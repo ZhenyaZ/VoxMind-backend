@@ -2,16 +2,16 @@ import { Controller, Post, Req, UploadedFile, UseGuards, UseInterceptors } from 
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 
-import { VoiceService } from './voice.service';
+import { NLPService } from './nlp.service';
 
-@Controller('voice')
-export class VoiceController {
-  constructor(private readonly voiceService: VoiceService) {}
+@Controller('nlp')
+export class NLPController {
+  constructor(private readonly nlpService: NLPService) {}
 
   @Post('transcribe')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   async transcribeAudio(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
-    return await this.voiceService.transcribeAudio(req.user.id, file);
+    return await this.nlpService.transcribeAudio(req.user.id, file);
   }
 }

@@ -33,7 +33,7 @@ const TAGS = [
 ];
 
 @Injectable()
-export class VoiceService {
+export class NLPService {
   private client: OpenAI;
   constructor(
     private readonly configService: ConfigService,

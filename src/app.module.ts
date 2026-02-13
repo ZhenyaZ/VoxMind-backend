@@ -8,11 +8,11 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { KnowledgeitemModule } from './knowledgeitem/knowledgeitem.module';
 import { UserModule } from './user/user.module';
-import { VoiceModule } from './voice/voice.module';
+import { NLPModule } from './voice/nlp.module';
 
 @Module({
   imports: [
-    VoiceModule,
+    NLPModule,
     UserModule,
     AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),

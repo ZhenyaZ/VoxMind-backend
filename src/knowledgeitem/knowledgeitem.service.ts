@@ -4,7 +4,7 @@ import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/commo
 import { KnowledgeItem } from 'src/entities/KnowledgeItem.entity';
 import { Users } from 'src/entities/User.entity';
 import { ConvertDistanceToPercentage } from 'src/utils/distanceToPercentage';
-import { VoiceService } from 'src/voice/voice.service';
+import { NLPService } from 'src/voice/nlp.service';
 
 import CreateKnowledgeItemDto from './dto/create.dto';
 import SearchKnowledgeItemDto from './dto/search.dto';
@@ -14,8 +14,8 @@ export class KnowledgeitemService {
   constructor(
     @InjectRepository(KnowledgeItem) private readonly knowledgeItemRepository: EntityRepository<KnowledgeItem>,
     @InjectRepository(Users) private readonly usersRepository: EntityRepository<Users>,
-    @Inject(forwardRef(() => VoiceService))
-    private readonly voiceService: VoiceService,
+    @Inject(forwardRef(() => NLPService))
+    private readonly nlpService: NLPService,
     private readonly em: EntityManager,
   ) {}
 
@@ -83,13 +83,13 @@ export class KnowledgeitemService {
       throw new NotFoundException(`Knowledge item ${itemId} not found`);
     }
 
-    const updatedClassified = await this.voiceService.classifyAudio(content);
+    const updatedClassified = await this.nlpService.classifyAudio(content);
 
     const rawTags = updatedClassified.tags;
     const validatedTags = Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags] : [];
 
     const contentForEmbedding = updatedClassified.content ?? content;
-    const updatedEmbeddings = await this.voiceService.getEmbedding(contentForEmbedding);
+    const updatedEmbeddings = await this.nlpService.getEmbedding(contentForEmbedding);
 
     const updateData = {
       ...updatedClassified,
