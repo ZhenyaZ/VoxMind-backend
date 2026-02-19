@@ -5,7 +5,7 @@ import jwtConfig from 'src/auth/config/jwt.config';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { KnowledgeItem } from 'src/entities/KnowledgeItem.entity';
 import { Users } from 'src/entities/User.entity';
-import { NLPModule } from 'src/voice/nlp.module';
+import { NLPModule } from 'src/nlp/nlp.module';
 
 import { KnowledgeitemController } from './knowledgeitem.controller';
 import { KnowledgeitemService } from './knowledgeitem.service';

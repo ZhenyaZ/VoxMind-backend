@@ -1,6 +1,6 @@
 import { IsArray, IsBoolean, IsDate, IsEnum, IsOptional, IsString } from 'class-validator';
 import { Users } from 'src/entities/User.entity';
-import { Tag } from 'src/voice/nlp.service';
+import { Tag } from 'src/nlp/nlp.service';
 export default class CreateKnowledgeItemDto {
   user: Users;
   @IsEnum(['reminder', 'fact'])

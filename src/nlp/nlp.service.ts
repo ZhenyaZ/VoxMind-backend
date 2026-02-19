@@ -2,6 +2,7 @@ import { forwardRef, Inject, Injectable, InternalServerErrorException, NotFoundE
 import { ConfigService } from '@nestjs/config';
 import OpenAI, { toFile } from 'openai';
 import { KnowledgeitemService } from 'src/knowledgeitem/knowledgeitem.service';
+import { ReminderProducerService } from 'src/reminder/producer/reminder-producer/reminder-producer.service';
 import { UserService } from 'src/user/user.service';
 
 export const TAGS = [
@@ -50,6 +51,7 @@ export class NLPService {
     @Inject(forwardRef(() => KnowledgeitemService))
     private readonly knowledgeitemService: KnowledgeitemService,
     private readonly userService: UserService,
+    private readonly reminderProducerService: ReminderProducerService,
   ) {
     this.client = new OpenAI({
       apiKey: this.configService.get<string>('OPENAI_API_KEY'),
@@ -66,6 +68,13 @@ export class NLPService {
         ? rawTags.filter((tag): tag is Tag => TAGS.includes(tag as Tag))
         : [];
       if (!classified.isQuestion) {
+        if (classified.dueDate) {
+          const targetDate = new Date(classified.dueDate);
+          const now = new Date();
+          const delay = targetDate.getTime() - now.getTime();
+
+          await this.reminderProducerService.createScheldueRemind(user.id, `Reminding - ${classified.content}`, delay);
+        }
         const embedding = await this.getEmbedding(classified.content);
         const createKnowledgeItemPayload = {
           ...classified,
@@ -109,6 +118,13 @@ export class NLPService {
         ? rawTags.filter((tag): tag is Tag => TAGS.includes(tag as Tag))
         : [];
       if (!classifiedAudio.isQuestion) {
+        if (classifiedAudio.dueDate) {
+          const targetDate = new Date(classifiedAudio.dueDate);
+          const now = new Date();
+          const delay = targetDate.getTime() - now.getTime();
+
+          await this.reminderProducerService.createScheldueRemind(user.id, `Reminding - ${classifiedAudio.content}`, delay);
+        }
         const embedding = await this.getEmbedding(classifiedAudio.content);
         const createKnowledgeItemPayload = {
           ...classifiedAudio,
@@ -267,7 +283,6 @@ INPUT TEXT: "${text}"
     });
 
     const content = response.choices[0].message?.content || '{}';
-    console.log(JSON.parse(content));
     return JSON.parse(content);
   }
 
@@ -277,5 +292,66 @@ INPUT TEXT: "${text}"
       input: text,
     });
     return response.data[0].embedding;
+  }
+
+  async remindMessage(message: string) {
+    const prompt = `You are the VoxMind Reminder Optimization Engine. Your sole task is to refactor informal user input into a professional, actionable, and structured reminder.
+
+=== CORE OBJECTIVE ===
+Normalize conversational requests into a standard format: [Action/Verb] + [Object/Context] + [Time/Condition].
+
+=== STRICT OPERATIONAL RULES ===
+1. Structural Standard
+   - Start with an imperative or infinitive verb (e.g., "Call", "Buy", "Schedule").
+   - Ensure the "What" (Action) precedes the "When" (Time).
+   - Example: "I need to remember to buy bread tomorrow" → Buy bread tomorrow.
+
+2. Temporal Precision
+   - Preserve relative time expressions (e.g., "in 2 hours", "next Friday").
+   - DO NOT calculate or invent specific calendar dates (e.g., do not turn "tomorrow" into "February 20th").
+   - Normalize time formats: "8 PM" or "8 вечера" → 20:00.
+
+3. Noise Reduction
+   - Strip all conversational fillers: "hey", "please", "listen", "don't forget", "remind me to".
+   - Remove redundant punctuation and emojis.
+
+4. Grammar & Language Consistency
+   - Output ONLY in the language used by the user. 
+   - Fix typos and improve syntax while maintaining the original intent.
+   - Use a bulleted list ONLY if the input contains multiple distinct tasks.
+
+5. Handling Ambiguity
+   - If the input is a noun without a verb (e.g., "Dentist at 5"), add a logical action: "Attend dentist appointment at 17:00".
+
+=== EXAMPLES ===
+Input: "Remind me in two days to go to the grocery store"
+Output: Go to the grocery store in two days.
+
+Input: "Напомни завтра в 8 вечера выпить таблетки"
+Output: Выпить таблетки завтра в 20:00.
+
+Input: "Don't forget to call Mom and pick up the dry cleaning"
+Output: 
+- Call Mom.
+- Pick up dry cleaning.
+
+=== OUTPUT FORMAT ===
+Return ONLY the optimized reminder text. No headers, no quotes, no explanations.`;
+
+    const response = await this.client.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: prompt,
+        },
+        {
+          role: 'user',
+          content: `USER REMIND: "${message}"`,
+        },
+      ],
+      temperature: 0.3,
+    });
+    return response.choices[0].message.content;
   }
 }

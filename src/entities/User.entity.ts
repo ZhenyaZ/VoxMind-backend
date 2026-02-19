@@ -1,6 +1,8 @@
 import { Collection, Entity, OneToMany, PrimaryKey, Property } from '@mikro-orm/core';
 
 import { KnowledgeItem } from './KnowledgeItem.entity';
+import { ScheduledTasks } from './ScheduledTask.entity';
+import { UserPushToken } from './UserPushToken.entity';
 
 @Entity()
 export class Users {
@@ -31,4 +33,8 @@ export class Users {
   updatedAt?: Date = new Date();
   @OneToMany(() => KnowledgeItem, (knowledgeItem) => knowledgeItem.user, { orphanRemoval: true })
   knowledgeItems = new Collection<KnowledgeItem>(this);
+  @OneToMany(() => UserPushToken, (UserPushToken) => UserPushToken.user, { orphanRemoval: true })
+  userPushTokens = new Collection<UserPushToken>(this);
+  @OneToMany(() => ScheduledTasks, (ScheduledTasks) => ScheduledTasks.user, { orphanRemoval: true })
+  scheduledTasks = new Collection<ScheduledTasks>(this);
 }

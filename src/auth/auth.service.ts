@@ -1,10 +1,14 @@
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { BadRequestException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { UserPushToken } from 'src/entities/UserPushToken.entity';
 import { UserService } from 'src/user/user.service';
 
 import refreshJwtConfig from './config/refresh-jwt.config';
+import { LoginDto } from './dto/loginDto.dto';
 import { RegisterDto } from './dto/registerDto.dto';
 
 @Injectable()
@@ -14,6 +18,9 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @Inject(refreshJwtConfig.KEY)
     private readonly refreshJwtConfig: ConfigType<any>,
+    @InjectRepository(UserPushToken)
+    private readonly userPushTokenRepository: EntityRepository<UserPushToken>,
+    private readonly em: EntityManager,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -36,7 +43,8 @@ export class AuthService {
     return this.issueTokens(user.id, user);
   }
 
-  async login(email: string, password: string) {
+  async login(loginDto: LoginDto) {
+    const { deviceId, deviceName, platform, email, password, pushToken } = loginDto;
     const user = await this.userService.findByEmail(email);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -46,10 +54,18 @@ export class AuthService {
     if (!isValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    if (pushToken) {
+      await this.userPushTokenRepository.upsert({
+        user: user,
+        deviceId: deviceId,
+        platform: platform,
+        pushToken: pushToken,
+        deviceName: deviceName,
+      });
+    }
     user.password = '';
     return this.issueTokens(user.id, user);
   }
-
   private async issueTokens(userId: string, user: any) {
     const payload = { id: userId };
 

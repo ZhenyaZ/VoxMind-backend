@@ -6,18 +6,21 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { BullMQConfig } from './config/bullmq.config';
 import { KnowledgeitemModule } from './knowledgeitem/knowledgeitem.module';
+import { NLPModule } from './nlp/nlp.module';
+import { ReminderModule } from './reminder/reminder.module';
 import { UserModule } from './user/user.module';
-import { NLPModule } from './voice/nlp.module';
-
 @Module({
   imports: [
     NLPModule,
     UserModule,
     AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
+    BullMQConfig,
     MikroOrmModule.forRoot(),
     KnowledgeitemModule,
+    ReminderModule,
   ],
   controllers: [AppController],
   providers: [AppService],

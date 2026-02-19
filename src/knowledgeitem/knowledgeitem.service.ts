@@ -3,8 +3,8 @@ import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { KnowledgeItem } from 'src/entities/KnowledgeItem.entity';
 import { Users } from 'src/entities/User.entity';
+import { NLPService } from 'src/nlp/nlp.service';
 import { ConvertDistanceToPercentage } from 'src/utils/distanceToPercentage';
-import { NLPService } from 'src/voice/nlp.service';
 
 import CreateKnowledgeItemDto from './dto/create.dto';
 import SearchKnowledgeItemDto from './dto/search.dto';
@@ -77,7 +77,6 @@ export class KnowledgeitemService {
   }
 
   async updateKnowledgeItem(itemId: number, content: string) {
-    console.log(itemId);
     const item = await this.knowledgeItemRepository.findOne({ id: itemId });
     if (!item) {
       throw new NotFoundException(`Knowledge item ${itemId} not found`);

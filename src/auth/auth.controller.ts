@@ -20,8 +20,7 @@ export class AuthController {
   }
   @Post('login')
   async login(@Body() loginDto: LoginDto, @Res() res) {
-    const { email, password } = loginDto;
-    const tokens = await this.authService.login(email, password);
+    const tokens = await this.authService.login(loginDto);
     res.cookie('accessToken', tokens.accessToken, { httpOnly: true, secure: true, sameSite: 'none' });
     res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true, secure: true, sameSite: 'none' });
     return res.send({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, user: tokens.user });
@@ -35,9 +34,9 @@ export class AuthController {
     return res.status(200).send({ accessToken: tokens.accessToken });
   }
 
-  @Get('logout')
+  @Post('logout')
   @UseGuards(JwtAuthGuard)
-  async logout(@Req() req, @Res() res: Response) {
+  async logout(@Req() req, @Res() res: Response, @Body() body: { pushToken: string }) {
     res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'none' });
     res.status(200).send({ message: 'Successfully logout' });
   }
