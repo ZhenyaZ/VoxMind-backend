@@ -23,6 +23,6 @@ export class KnowledgeitemController {
   @UseGuards(JwtAuthGuard)
   async updateKnowledgeItem(@Req() req, @Res() res, @Body() body: { itemId: number; content: string }) {
     const newItem = await this.knowledgeitemService.updateKnowledgeItem(body.itemId, body.content);
-    return newItem;
+    res.status(200).send(newItem);
   }
 }

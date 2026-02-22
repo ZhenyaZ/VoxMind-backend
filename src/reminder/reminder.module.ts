@@ -10,6 +10,7 @@ import { UserModule } from 'src/user/user.module';
 
 import { ReminderProcessor } from './processor/reminder.processor';
 import { ReminderProducerService } from './producer/reminder-producer/reminder-producer.service';
+import { ReminderController } from './reminder.controller';
 
 @Module({
   imports: [
@@ -23,5 +24,6 @@ import { ReminderProducerService } from './producer/reminder-producer/reminder-p
   ],
   providers: [ReminderProducerService, ReminderProcessor, JwtStrategy],
   exports: [ReminderProducerService],
+  controllers: [ReminderController],
 })
 export class ReminderModule {}

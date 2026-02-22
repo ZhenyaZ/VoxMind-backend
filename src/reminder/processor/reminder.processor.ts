@@ -20,6 +20,7 @@ export class ReminderProcessor extends WorkerHost {
   async process(job: Job): Promise<any> {
     const em = this.orm.em.fork();
     const { userId, message, taskId } = job.data;
+    console.log(job.data);
     let tickets: any[] = [];
     try {
       const user = await em.findOne(Users, { id: userId });
@@ -55,6 +56,8 @@ export class ReminderProcessor extends WorkerHost {
                 console.error(`Push error for ${tokenIdentifier}: ${ticket.message}`);
               }
             }
+            console.log(ticket.status);
+            console.log(ticket);
           }
         } catch (pushError) {
           console.error('Error sending chunk:', pushError);

@@ -44,24 +44,14 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const { deviceId, deviceName, platform, email, password, pushToken } = loginDto;
-    const user = await this.userService.findByEmail(email);
+    const user = await this.userService.findByEmail(loginDto.email);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isValid = await bcrypt.compare(password, user.password);
+    const isValid = await bcrypt.compare(loginDto.password, user.password);
     if (!isValid) {
       throw new UnauthorizedException('Invalid credentials');
-    }
-    if (pushToken) {
-      await this.userPushTokenRepository.upsert({
-        user: user,
-        deviceId: deviceId,
-        platform: platform,
-        pushToken: pushToken,
-        deviceName: deviceName,
-      });
     }
     user.password = '';
     return this.issueTokens(user.id, user);

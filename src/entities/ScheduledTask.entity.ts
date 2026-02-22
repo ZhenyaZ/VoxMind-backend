@@ -18,6 +18,12 @@ export class ScheduledTasks {
   delay: number;
   @Property()
   message: string;
+  @Property({ nullable: true })
+  pattern?: string;
+  @Property({ default: false })
+  repeated?: boolean;
+  @Property({ default: false })
+  addedByUser?: boolean;
   @Property({ type: 'timestamptz', defaultRaw: 'NOW()', onCreate: () => new Date() })
   createdAt?: Date = new Date();
   @Property({ type: 'timestamptz', defaultRaw: 'NOW()', onUpdate: () => new Date() })
