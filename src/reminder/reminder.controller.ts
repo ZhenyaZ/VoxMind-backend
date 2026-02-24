@@ -9,12 +9,12 @@ export class ReminderController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  async createRepeatScheduledReminder(
+  async createManualScheduledReminder(
     @Req() req,
     @Res() res,
-    @Body() data: { message: string; days: DAYS[]; hours: string; minutes: string; repeat: boolean },
+    @Body() data: { message: string; date: string; days: DAYS[]; hours: string; minutes: string; repeat: boolean },
   ) {
-    const response = await this.reminderProducerService.createRepeatScheduledTask(req.user.id, data);
+    const response = await this.reminderProducerService.createManualScheduledTask(req.user.id, data);
     res.status(200).send(response);
   }
   @Get()

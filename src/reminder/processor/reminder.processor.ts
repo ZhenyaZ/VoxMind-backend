@@ -50,14 +50,11 @@ export class ReminderProcessor extends WorkerHost {
               const error = ticket.details?.error;
 
               if (error === 'DeviceNotRegistered') {
-                console.warn(`Token ${tokenIdentifier} is not registered.`);
                 await em.nativeDelete(UserPushToken, { pushToken: tokenIdentifier });
               } else {
                 console.error(`Push error for ${tokenIdentifier}: ${ticket.message}`);
               }
             }
-            console.log(ticket.status);
-            console.log(ticket);
           }
         } catch (pushError) {
           console.error('Error sending chunk:', pushError);

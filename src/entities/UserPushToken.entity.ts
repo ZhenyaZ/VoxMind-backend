@@ -10,14 +10,14 @@ export class UserPushToken {
   @ManyToOne(() => Users, { cascade: [Cascade.REMOVE] })
   user: Users;
 
-  @Property()
+  @Property({ nullable: true })
   @Unique()
   pushToken: string;
-  @Property()
+  @Property({ nullable: true })
   deviceName: string;
-  @Property()
+  @Property({ nullable: true })
   deviceId: string;
-  @Property()
+  @Property({ nullable: true })
   platform: 'android' | 'ios';
   @Property({ type: 'timestamptz', defaultRaw: 'NOW()', onCreate: () => new Date() })
   createdAt?: Date = new Date();
