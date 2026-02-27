@@ -10,7 +10,6 @@ import { AuthService } from './auth.service';
 import googleConfig from './config/google.config';
 import jwtConfig from './config/jwt.config';
 import refreshJwtConfig from './config/refresh-jwt.config';
-import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshJwtStrategy } from './strategies/refresh.strategy';
 
@@ -25,6 +24,6 @@ import { RefreshJwtStrategy } from './strategies/refresh.strategy';
     ConfigModule.forFeature(googleConfig),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshJwtStrategy, GoogleStrategy],
+  providers: [AuthService, JwtStrategy, RefreshJwtStrategy],
 })
 export class AuthModule {}
