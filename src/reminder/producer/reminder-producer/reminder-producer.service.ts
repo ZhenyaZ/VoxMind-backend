@@ -21,6 +21,7 @@ export class ReminderProducerService {
     @InjectQueue('reminder')
     private readonly reminderQueue: Queue,
     @InjectRepository(ScheduledTasks) private readonly scheduledTasks: EntityRepository<ScheduledTasks>,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
     @Inject(forwardRef(() => NLPService))
     private readonly nlpService: NLPService,
@@ -32,6 +33,15 @@ export class ReminderProducerService {
     if (!user) throw new NotFoundException('User not found');
     const scheduledReminds = await this.scheduledTasks.findAll({
       where: { user: user, addedByUser: true },
+      exclude: ['user'],
+    });
+    return scheduledReminds;
+  }
+  async getAllReminds(userId: string) {
+    const user = await this.userService.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    const scheduledReminds = await this.scheduledTasks.findAll({
+      where: { user: user },
       exclude: ['user'],
     });
     return scheduledReminds;

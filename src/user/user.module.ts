@@ -1,5 +1,5 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs';
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import jwtConfig from 'src/auth/config/jwt.config';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
@@ -8,9 +8,10 @@ import { UserPushToken } from 'src/entities/UserPushToken.entity';
 
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
+import { ReminderModule } from 'src/reminder/reminder.module';
 
 @Module({
-  imports: [MikroOrmModule.forFeature([Users, UserPushToken]), ConfigModule.forFeature(jwtConfig)],
+  imports: [MikroOrmModule.forFeature([Users, UserPushToken]), ConfigModule.forFeature(jwtConfig), forwardRef(() => ReminderModule)],
   controllers: [UserController],
   providers: [UserService, JwtAuthGuard],
   exports: [UserService],

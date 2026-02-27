@@ -6,6 +6,7 @@ import { UserPushToken } from 'src/entities/UserPushToken.entity';
 
 import createUserDto from './dto/createUser.dto';
 import { UpdatePushTokenDto } from './dto/updatePushToken.dto';
+import { ReminderProducerService } from 'src/reminder/producer/reminder-producer/reminder-producer.service';
 
 @Injectable()
 export class UserService {
@@ -14,6 +15,7 @@ export class UserService {
     private readonly usersRepository: EntityRepository<Users>,
     @InjectRepository(UserPushToken)
     private readonly userPushTokenRepository: EntityRepository<UserPushToken>,
+    private readonly reminderProducerService: ReminderProducerService,
     private readonly em: EntityManager,
   ) {}
 
@@ -39,6 +41,21 @@ export class UserService {
       return null;
     }
     return user;
+  }
+  async deleteUserAccount(id: string) {
+    const user = await this.usersRepository.findOne({ id });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    await this.reminderProducerService.getAllReminds(id).then(async (tasks) => {
+      for (const task of tasks) {
+        await this.reminderProducerService.deleteRemind(id, task.taskId);
+        console.log(`Deleted task with ID: ${task.taskId} for user ID: ${id}`);
+      }
+    });
+    await this.em.remove(user).flush();
+    console.log(`Deleted user with ID: ${id} and all associated data`);
+    return { message: 'User deleted successfully' };
   }
   async updateUserPushToken(userId: string, data: UpdatePushTokenDto) {
     const user = await this.findById(userId);

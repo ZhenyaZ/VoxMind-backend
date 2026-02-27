@@ -50,7 +50,9 @@ export class NLPService {
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => KnowledgeitemService))
     private readonly knowledgeitemService: KnowledgeitemService,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
+    @Inject(forwardRef(() => ReminderProducerService))
     private readonly reminderProducerService: ReminderProducerService,
   ) {
     this.client = new OpenAI({

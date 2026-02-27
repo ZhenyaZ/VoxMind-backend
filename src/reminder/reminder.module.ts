@@ -19,7 +19,7 @@ import { ReminderController } from './reminder.controller';
     }),
     ConfigModule.forFeature(jwtConfig),
     MikroOrmModule.forFeature([ScheduledTasks]),
-    UserModule,
+    forwardRef(() => UserModule),
     forwardRef(() => NLPModule),
   ],
   providers: [ReminderProducerService, ReminderProcessor, JwtStrategy],
