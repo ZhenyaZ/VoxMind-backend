@@ -4,7 +4,7 @@ import { Users } from './User.entity';
 
 @Entity()
 export class ScheduledTasks {
-  @PrimaryKey()
+  @PrimaryKey({ type: 'bigint' })
   id: number;
 
   @ManyToOne(() => Users, { cascade: [Cascade.REMOVE] })
@@ -14,7 +14,7 @@ export class ScheduledTasks {
   taskId: string;
   @Property({ default: 'SCHEDULED' })
   status: string;
-  @Property()
+  @Property({ type: 'bigint' })
   delay: number;
   @Property()
   message: string;
