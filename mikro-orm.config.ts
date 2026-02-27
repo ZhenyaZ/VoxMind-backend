@@ -10,10 +10,10 @@ dotenv.config();
 
 export default defineConfig({
   driver: PostgreSqlDriver,
-  dbName: process.env.ENV === 'prod' ? process.env.DB_NAME_PROD : process.env.DB_NAME,
-  user: process.env.ENV === 'prod' ? process.env.DB_USER_PROD : process.env.DB_USER,
-  password: process.env.ENV === 'prod' ? process.env.DB_PWD_PROD : process.env.DB_PWD,
-  host: process.env.ENV === 'prod' ? process.env.DB_HOST_PROD : process.env.DB_HOST_DEV,
+  // dbName: process.env.ENV === 'prod' ? process.env.DB_NAME_PROD : process.env.DB_NAME,
+  // user: process.env.ENV === 'prod' ? process.env.DB_USER_PROD : process.env.DB_USER,
+  // password: process.env.ENV === 'prod' ? process.env.DB_PWD_PROD : process.env.DB_PWD,
+  // host: process.env.ENV === 'prod' ? process.env.DB_HOST_PROD : process.env.DB_HOST_DEV,
   clientUrl: process.env.ENV === 'prod' ? process.env.DB_PROD_URL : undefined,
   port: Number(process.env.DB_PORT),
   entities: [Users, KnowledgeItem, UserPushToken, ScheduledTasks],
