@@ -11,6 +11,7 @@ import { KnowledgeitemModule } from './knowledgeitem/knowledgeitem.module';
 import { NLPModule } from './nlp/nlp.module';
 import { ReminderModule } from './reminder/reminder.module';
 import { UserModule } from './user/user.module';
+import { LoggerModule } from 'nestjs-pino';
 @Module({
   imports: [
     NLPModule,
@@ -21,6 +22,11 @@ import { UserModule } from './user/user.module';
     MikroOrmModule.forRoot(),
     KnowledgeitemModule,
     ReminderModule,
+    LoggerModule.forRoot({
+  pinoHttp: {
+    level: 'info',
+  },
+})
   ],
   controllers: [AppController],
   providers: [AppService],
