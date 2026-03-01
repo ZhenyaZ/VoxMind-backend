@@ -1,12 +1,12 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Users } from 'src/entities/User.entity';
 import { UserPushToken } from 'src/entities/UserPushToken.entity';
+import { ReminderProducerService } from 'src/reminder/producer/reminder-producer/reminder-producer.service';
 
 import createUserDto from './dto/createUser.dto';
 import { UpdatePushTokenDto } from './dto/updatePushToken.dto';
-import { ReminderProducerService } from 'src/reminder/producer/reminder-producer/reminder-producer.service';
 
 @Injectable()
 export class UserService {
@@ -15,6 +15,7 @@ export class UserService {
     private readonly usersRepository: EntityRepository<Users>,
     @InjectRepository(UserPushToken)
     private readonly userPushTokenRepository: EntityRepository<UserPushToken>,
+    @Inject(forwardRef(() => ReminderProducerService))
     private readonly reminderProducerService: ReminderProducerService,
     private readonly em: EntityManager,
   ) {}
@@ -67,5 +68,11 @@ export class UserService {
       pushToken: data.pushToken,
       deviceName: data.deviceName,
     });
+  }
+
+  async getUserTimezone(id: string) {
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+    return user.timezone;
   }
 }

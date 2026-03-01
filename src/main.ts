@@ -1,13 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
+import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module';
-import {Logger} from 'nestjs-pino'
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
-  app.useLogger(app.get(Logger))
+  app.useLogger(app.get(Logger));
   console.log(`Environment: ${process.env.ENV}`);
   app.enableCors({
     origin: true,

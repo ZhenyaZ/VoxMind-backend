@@ -5,13 +5,17 @@ import jwtConfig from 'src/auth/config/jwt.config';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { Users } from 'src/entities/User.entity';
 import { UserPushToken } from 'src/entities/UserPushToken.entity';
+import { ReminderModule } from 'src/reminder/reminder.module';
 
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { ReminderModule } from 'src/reminder/reminder.module';
 
 @Module({
-  imports: [MikroOrmModule.forFeature([Users, UserPushToken]), ConfigModule.forFeature(jwtConfig), forwardRef(() => ReminderModule)],
+  imports: [
+    MikroOrmModule.forFeature([Users, UserPushToken]),
+    ConfigModule.forFeature(jwtConfig),
+    forwardRef(() => ReminderModule),
+  ],
   controllers: [UserController],
   providers: [UserService, JwtAuthGuard],
   exports: [UserService],

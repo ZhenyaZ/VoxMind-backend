@@ -2,6 +2,7 @@ import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { MikroORM } from '@mikro-orm/postgresql';
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { LoggerModule } from 'nestjs-pino';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -11,7 +12,6 @@ import { KnowledgeitemModule } from './knowledgeitem/knowledgeitem.module';
 import { NLPModule } from './nlp/nlp.module';
 import { ReminderModule } from './reminder/reminder.module';
 import { UserModule } from './user/user.module';
-import { LoggerModule } from 'nestjs-pino';
 @Module({
   imports: [
     NLPModule,
@@ -23,10 +23,10 @@ import { LoggerModule } from 'nestjs-pino';
     KnowledgeitemModule,
     ReminderModule,
     LoggerModule.forRoot({
-  pinoHttp: {
-    level: 'info',
-  },
-})
+      pinoHttp: {
+        level: 'info',
+      },
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],

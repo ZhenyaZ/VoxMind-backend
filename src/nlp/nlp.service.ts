@@ -64,7 +64,7 @@ export class NLPService {
       const user = await this.userService.findById(user_id);
       if (!user) throw new NotFoundException('User not found');
 
-      const classified = await this.classifyAudio(content);
+      const classified = await this.classifyAudio(content, user_id);
       const rawTags = classified.tags;
       const validatedTags: Tag[] = Array.isArray(rawTags)
         ? rawTags.filter((tag): tag is Tag => TAGS.includes(tag as Tag))
@@ -114,7 +114,7 @@ export class NLPService {
         file: await toFile(file.buffer, 'audio.m4a'),
         model: 'gpt-4o-mini-transcribe',
       });
-      const classifiedAudio = await this.classifyAudio(transcription.text);
+      const classifiedAudio = await this.classifyAudio(transcription.text, user_id);
       const rawTags = classifiedAudio.tags;
       const validatedTags: Tag[] = Array.isArray(rawTags)
         ? rawTags.filter((tag): tag is Tag => TAGS.includes(tag as Tag))
@@ -230,55 +230,62 @@ No references to context or notes.`;
     return response.choices[0].message.content;
   }
 
-  async classifyAudio(text: string): Promise<ClassifiedResponse> {
+  async classifyAudio(text: string, id: string): Promise<ClassifiedResponse> {
     const now = new Date();
-    const dateContext = `Today: ${now.toISOString()} (weekday: ${now.toLocaleDateString('en-US', { weekday: 'long' })})`;
+    const userTimezone = (await this.userService.getUserTimezone(id)) || 'UTC';
+    const localTimeStr = now.toLocaleString('en-US', {
+      timeZone: userTimezone,
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+
+    const dateContext = `
+      User Timezone: ${userTimezone}
+      User Local Time: ${localTimeStr}
+      Reference UTC Time: ${now.toISOString()}
+    `;
 
     const prompt = `
 You are an expert Multilingual Semantic Analyst for VoxMind.
 Your goal is to parse raw user speech into a strict JSON format, respecting the input language.
 
 === CURRENT TIME CONTEXT ===
-Reference Time: "${dateContext}"
-(Use this to calculate absolute ISO dates for relative terms like "tomorrow", "next Friday", "mañana", "morgen").
+Reference Context: "${dateContext}"
+(CRITICAL: The user is in ${userTimezone}. Use "User Local Time" as the anchor for relative terms like "today", "tomorrow", or "at 9 PM").
 
 === LANGUAGE & GRAMMAR RULES ===
 1. **Auto-Detect Language:** Identify the dominant language of the INPUT TEXT.
-2. **Output Language:** The fields "subject", "location", and "content" MUST remain in the **Detected Language**.
-3. **Subject Normalization:** - Extract the main topic as a noun phrase (1-3 words).
-   - **CRITICAL:** Convert the subject to its **DICTIONARY FORM** (Nominative case / Singular) appropriate for the detected language.
-     - Example (RU): "Купить огурцов" -> "огурец"
-     - Example (EN): "Buy apples" -> "apple"
-     - Example (ES): "Comprar manzanas" -> "manzana"
-     - Example (DE): "Kaufe Äpfel" -> "Apfel"
+2. **Output Language:** "subject", "location", and "content" MUST remain in the Detected Language.
+3. **Subject Normalization:** Extract the main topic in DICTIONARY FORM (Nominative/Singular).
 
 === CLASSIFICATION LOGIC ===
-1. **isQuestion (Intent Detection):**
-   - TRUE if the input asks for information (starts with interrogative words like "Who/Qui/Wer/Kto", "Where/Où/Wo/Gde" OR ends with "?").
-   - FALSE if the input states a fact, a memory, or commands an action.
-
-2. **Type Determination (if isQuestion is false):**
-   - "reminder": Requires future action. Implies a verb like "buy", "call", "go", "faire", "kaufen", "делать".
-   - "fact": Static knowledge, codes, location of items.
+1. **isQuestion:** TRUE for info requests. FALSE for commands/facts.
+2. **Type:** "reminder" (future action) OR "fact" (stored info).
 
 === TIME & DUE DATE LOGIC ===
-1. **Natural Language Parsing:** Convert written numbers in ANY language to digits (e.g., "девять", "nine" -> 9).
-2. **AM/PM Awareness:** Recognize markers like "вечера", "night", "PM" (+12h) and "утра", "morning", "AM".
+1. **Natural Language Parsing:** Convert written numbers ("девять") to digits (9).
+2. **AM/PM & Local Context:** - "9 PM" or "9 вечера" refers to 21:00 in the **User Local Time**.
+   - Calculate the absolute UTC time based on this local reference.
 3. **Relative Scheduling:**
-   - If time is mentioned (e.g., "в 9 вечера"): Calculate the nearest future ISO UTC string.
-   - If NO time is mentioned for a "reminder": Set date to TODAY, time to +1 HOUR from Reference Time.
-4. **Static Info:** If type is "fact", dueDate MUST be null.
-5. **Format:** Output MUST be a valid ISO 8601 string (e.g., 2026-03-01T22:00:00.000Z).
+   - If a specific time is mentioned (e.g., "в 9 вечера"): Calculate the nearest future ISO UTC string. 
+   - If that time has already passed today in the user's timezone, schedule for tomorrow.
+   - If NO time is mentioned for a "reminder": Set to +1 HOUR from current UTC.
+4. **Output Format:** Return a strict ISO 8601 string (UTC) with 'Z' suffix (e.g., 2026-03-01T20:00:00.000Z).
 
 === FIELDS SPECIFICATION (Strict JSON) ===
-1. type: "reminder" OR "fact".
-2. subject: The core topic in the INPUT LANGUAGE (Dictionary form).
-3. location: Specific place mentioned (e.g., "kitchen", "küche", "cocina"). Null if missing.
-4. content: The original input text, cleaned and capitalized.
+1. type: "reminder" | "fact"
+2. subject: Topic (Dictionary form).
+3. location: Place or null.
+4. content: Original text, cleaned.
 5. isQuestion: boolean.
-6. dueDate: ISO 8601 string (UTC) if a time context exists. Null otherwise.
-7. tags: Select 1-3 tags **STRICTLY** from this list: [${TAGS.join(', ')}].
-   - **IMPORTANT:** Even if the input is in Russian/German/Spanish, **keep the tags in ENGLISH** exactly as listed above.
+6. dueDate: ISO 8601 string (UTC) or null.
+7. tags: [${TAGS.join(', ')}] (English only).
 
 INPUT TEXT: "${text}"
 `;

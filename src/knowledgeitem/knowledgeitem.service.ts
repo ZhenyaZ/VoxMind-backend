@@ -48,7 +48,7 @@ export class KnowledgeitemService {
     const vectorString = `[${queryVector.join(',')}]`;
 
     const items = await this.knowledgeItemRepository.getEntityManager().execute(
-    `
+      `
     SELECT id, subject, content, type, 
            (embedding <=> ?::vector) as distance
     FROM knowledge_item
@@ -57,8 +57,8 @@ export class KnowledgeitemService {
     ORDER BY distance ASC
     LIMIT 5; 
     `,
-    [vectorString, user.id, vectorString]
-  );
+      [vectorString, user.id, vectorString],
+    );
     items.forEach((item) => {
       item.score = ConvertDistanceToPercentage(item.distance);
     });
@@ -83,7 +83,7 @@ export class KnowledgeitemService {
       throw new NotFoundException(`Knowledge item ${itemId} not found`);
     }
 
-    const updatedClassified = await this.nlpService.classifyAudio(content);
+    const updatedClassified = await this.nlpService.classifyAudio(content, item.user.id);
 
     const rawTags = updatedClassified.tags;
     const validatedTags = Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags] : [];
