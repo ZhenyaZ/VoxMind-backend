@@ -74,8 +74,8 @@ export class NLPService {
           const targetDate = new Date(classified.dueDate);
           const now = new Date();
           const delay = targetDate.getTime() - now.getTime();
-
-          await this.reminderProducerService.createScheduleRemind(user.id, `Reminding - ${classified.content}`, delay);
+          const scheduledMessage = await this.remindMessage(classified.content);
+          await this.reminderProducerService.createScheduleRemind(user.id, `${scheduledMessage}`, delay);
         }
         const embedding = await this.getEmbedding(classified.content);
         const createKnowledgeItemPayload = {
@@ -124,8 +124,8 @@ export class NLPService {
           const targetDate = new Date(classifiedAudio.dueDate);
           const now = new Date();
           const delay = targetDate.getTime() - now.getTime();
-
-          await this.reminderProducerService.createScheduleRemind(user.id, `Reminding - ${classifiedAudio.content}`, delay);
+          const scheduledMessage = await this.remindMessage(classifiedAudio.content);
+          await this.reminderProducerService.createScheduleRemind(user.id, `${scheduledMessage}`, delay);
         }
         const embedding = await this.getEmbedding(classifiedAudio.content);
         const createKnowledgeItemPayload = {
