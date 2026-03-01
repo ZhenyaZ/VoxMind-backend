@@ -260,13 +260,15 @@ Reference Time: "${dateContext}"
 2. **Type Determination (if isQuestion is false):**
    - "reminder": Requires future action. Implies a verb like "buy", "call", "go", "faire", "kaufen", "делать".
    - "fact": Static knowledge, codes, location of items.
-   
+
 === TIME & DUE DATE LOGIC ===
-- If a specific time is mentioned: Calculate absolute ISO 8601 UTC string.
-- If NO specific time is mentioned for a "reminder":
-  - Set date to TODAY (from Reference Time).
-  - Set time to 1 HOUR AHEAD from current Reference Time to ensure it's in the future.
-- If type is "fact": dueDate must be null.
+1. **Natural Language Parsing:** Convert written numbers in ANY language to digits (e.g., "девять", "nine" -> 9).
+2. **AM/PM Awareness:** Recognize markers like "вечера", "night", "PM" (+12h) and "утра", "morning", "AM".
+3. **Relative Scheduling:**
+   - If time is mentioned (e.g., "в 9 вечера"): Calculate the nearest future ISO UTC string. If that time passed today, set for tomorrow.
+   - If NO time is mentioned for a "reminder": Set date to TODAY, time to +1 HOUR from Reference Time.
+4. **Static Info:** If type is "fact", dueDate MUST be null.
+5. **Format:** Output MUST be a valid ISO 8601 string (e.g., 2026-03-01T22:00:00.000Z).
 
 === FIELDS SPECIFICATION (Strict JSON) ===
 1. type: "reminder" OR "fact".
