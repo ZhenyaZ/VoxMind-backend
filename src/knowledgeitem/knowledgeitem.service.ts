@@ -50,14 +50,14 @@ export class KnowledgeitemService {
     const items = await this.knowledgeItemRepository.getEntityManager().execute(
     `
     SELECT id, subject, content, type, 
-           (embedding <=> $1::vector) as distance
+           (embedding <=> ?::vector) as distance
     FROM knowledge_item
-    WHERE user_id = $2 
-      AND (embedding <=> $1::vector) < 0.6
+    WHERE user_id = ? 
+      AND (embedding <=> ?::vector) < 0.6
     ORDER BY distance ASC
     LIMIT 5; 
     `,
-    [vectorString, user.id],
+    [vectorString, user.id, vectorString]
   );
     items.forEach((item) => {
       item.score = ConvertDistanceToPercentage(item.distance);
