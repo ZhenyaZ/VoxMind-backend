@@ -265,7 +265,7 @@ Reference Time: "${dateContext}"
 1. **Natural Language Parsing:** Convert written numbers in ANY language to digits (e.g., "девять", "nine" -> 9).
 2. **AM/PM Awareness:** Recognize markers like "вечера", "night", "PM" (+12h) and "утра", "morning", "AM".
 3. **Relative Scheduling:**
-   - If time is mentioned (e.g., "в 9 вечера"): Calculate the nearest future ISO UTC string. If that time passed today, set for tomorrow.
+   - If time is mentioned (e.g., "в 9 вечера"): Calculate the nearest future ISO UTC string.
    - If NO time is mentioned for a "reminder": Set date to TODAY, time to +1 HOUR from Reference Time.
 4. **Static Info:** If type is "fact", dueDate MUST be null.
 5. **Format:** Output MUST be a valid ISO 8601 string (e.g., 2026-03-01T22:00:00.000Z).
