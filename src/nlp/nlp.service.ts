@@ -1,6 +1,11 @@
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityRepository } from '@mikro-orm/postgresql';
 import { forwardRef, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DateTime } from 'luxon';
 import OpenAI, { toFile } from 'openai';
+import { KnowledgeItem } from 'src/entities/KnowledgeItem.entity';
+import { ScheduledTasks } from 'src/entities/ScheduledTask.entity';
 import { KnowledgeitemService } from 'src/knowledgeitem/knowledgeitem.service';
 import { ReminderProducerService } from 'src/reminder/producer/reminder-producer/reminder-producer.service';
 import { UserService } from 'src/user/user.service';
@@ -47,6 +52,8 @@ interface ClassifiedResponse {
 export class NLPService {
   private client: OpenAI;
   constructor(
+    @InjectRepository(KnowledgeItem) private readonly knowledgeItemRepository: EntityRepository<KnowledgeItem>,
+    @InjectRepository(ScheduledTasks) private readonly scheduledTasksRepository: EntityRepository<ScheduledTasks>,
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => KnowledgeitemService))
     private readonly knowledgeitemService: KnowledgeitemService,
@@ -63,7 +70,8 @@ export class NLPService {
     try {
       const user = await this.userService.findById(user_id);
       if (!user) throw new NotFoundException('User not found');
-
+      const userTimezone = await this.userService.getUserTimezone(user_id);
+      let scheduledTaskId;
       const classified = await this.classifyAudio(content, user_id);
       const rawTags = classified.tags;
       const validatedTags: Tag[] = Array.isArray(rawTags)
@@ -71,11 +79,15 @@ export class NLPService {
         : [];
       if (!classified.isQuestion) {
         if (classified.dueDate) {
-          const targetDate = new Date(classified.dueDate);
-          const now = new Date();
-          const delay = targetDate.getTime() - now.getTime();
+          const targetDate = DateTime.fromJSDate(new Date(classified.dueDate), { zone: userTimezone }).toUTC();
+          const delay = targetDate.toMillis() - Date.now();
           const scheduledMessage = await this.remindMessage(classified.content);
-          await this.reminderProducerService.createScheduleRemind(user.id, `${scheduledMessage}`, delay);
+          const scheduledTask = await this.reminderProducerService.createScheduleRemind(
+            user.id,
+            `${scheduledMessage}`,
+            delay,
+          );
+          scheduledTaskId = scheduledTask.task.id;
         }
         const embedding = await this.getEmbedding(classified.content);
         const createKnowledgeItemPayload = {
@@ -85,6 +97,8 @@ export class NLPService {
           user: user,
         };
         const createdKnowledgeItem = await this.knowledgeitemService.createKnowledgeItem(createKnowledgeItemPayload);
+        if (scheduledTaskId)
+          await this.scheduledTasksRepository.nativeUpdate({ id: scheduledTaskId }, { knowledgeItem: createdKnowledgeItem });
         if (!createdKnowledgeItem) {
           throw new Error('Failed to create knowledge item');
         }
@@ -110,6 +124,8 @@ export class NLPService {
       if (!user) {
         throw new NotFoundException('User not found');
       }
+      const userTimezone = await this.userService.getUserTimezone(user_id);
+      let scheduledTaskId;
       const transcription = await this.client.audio.transcriptions.create({
         file: await toFile(file.buffer, 'audio.m4a'),
         model: 'gpt-4o-mini-transcribe',
@@ -121,11 +137,11 @@ export class NLPService {
         : [];
       if (!classifiedAudio.isQuestion) {
         if (classifiedAudio.dueDate) {
-          const targetDate = new Date(classifiedAudio.dueDate);
-          const now = new Date();
-          const delay = targetDate.getTime() - now.getTime();
+          const targetDate = DateTime.fromJSDate(new Date(classifiedAudio.dueDate), { zone: userTimezone }).toUTC();
+          const delay = targetDate.toMillis() - Date.now();
           const scheduledMessage = await this.remindMessage(classifiedAudio.content);
-          await this.reminderProducerService.createScheduleRemind(user.id, `${scheduledMessage}`, delay);
+          const scheduledTask = await this.reminderProducerService.createScheduleRemind(user.id, `${scheduledMessage}`, delay);
+          scheduledTaskId = scheduledTask.task.id;
         }
         const embedding = await this.getEmbedding(classifiedAudio.content);
         const createKnowledgeItemPayload = {
@@ -135,6 +151,8 @@ export class NLPService {
           user: user,
         };
         const createdKnowledgeItem = await this.knowledgeitemService.createKnowledgeItem(createKnowledgeItemPayload);
+        if (scheduledTaskId)
+          await this.scheduledTasksRepository.nativeUpdate({ id: scheduledTaskId }, { knowledgeItem: createdKnowledgeItem });
         if (!createdKnowledgeItem) {
           throw new Error('Failed to create knowledge item');
         }

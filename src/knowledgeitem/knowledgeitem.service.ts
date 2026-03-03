@@ -2,8 +2,10 @@ import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { KnowledgeItem } from 'src/entities/KnowledgeItem.entity';
+import { ScheduledTasks } from 'src/entities/ScheduledTask.entity';
 import { Users } from 'src/entities/User.entity';
 import { NLPService } from 'src/nlp/nlp.service';
+import { ReminderProducerService } from 'src/reminder/producer/reminder-producer/reminder-producer.service';
 import { ConvertDistanceToPercentage } from 'src/utils/distanceToPercentage';
 
 import CreateKnowledgeItemDto from './dto/create.dto';
@@ -14,8 +16,11 @@ export class KnowledgeitemService {
   constructor(
     @InjectRepository(KnowledgeItem) private readonly knowledgeItemRepository: EntityRepository<KnowledgeItem>,
     @InjectRepository(Users) private readonly usersRepository: EntityRepository<Users>,
+    @InjectRepository(ScheduledTasks) private readonly scheduledTasksRepository: EntityRepository<ScheduledTasks>,
     @Inject(forwardRef(() => NLPService))
     private readonly nlpService: NLPService,
+    @Inject(forwardRef(() => ReminderProducerService))
+    private readonly reminderProducerService: ReminderProducerService,
     private readonly em: EntityManager,
   ) {}
 
@@ -74,6 +79,15 @@ export class KnowledgeitemService {
     return items;
   }
   async deleteKnowledgeItem(itemId: number) {
+    const item = await this.knowledgeItemRepository.findOne({ id: itemId });
+    if (!item) {
+      throw new NotFoundException(`Knowledge item ${itemId} not found`);
+    }
+    const scheduledTask = await this.scheduledTasksRepository.findOne({ knowledgeItem: { id: itemId } });
+    console.log('Scheduled task associated with knowledge item:', scheduledTask);
+    if (scheduledTask) {
+      await this.reminderProducerService.deleteRemind(scheduledTask.user.id, scheduledTask.taskId);
+    }
     return await this.knowledgeItemRepository.nativeDelete({ id: itemId });
   }
 

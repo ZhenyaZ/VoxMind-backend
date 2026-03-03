@@ -1,5 +1,6 @@
 import { Cascade, Entity, ManyToOne, PrimaryKey, Property } from '@mikro-orm/core';
 
+import { KnowledgeItem } from './KnowledgeItem.entity';
 import { Users } from './User.entity';
 
 @Entity()
@@ -9,6 +10,8 @@ export class ScheduledTasks {
 
   @ManyToOne(() => Users, { cascade: [Cascade.REMOVE] })
   user: Users;
+  @ManyToOne(() => KnowledgeItem, { nullable: true, cascade: [Cascade.REMOVE] })
+  knowledgeItem?: KnowledgeItem;
 
   @Property()
   taskId: string;

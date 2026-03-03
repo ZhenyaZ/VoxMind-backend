@@ -1,6 +1,7 @@
-import { Cascade, Entity, Enum, ManyToOne, PrimaryKey, Property } from '@mikro-orm/core';
+import { Cascade, Collection, Entity, Enum, ManyToOne, OneToMany, PrimaryKey, Property } from '@mikro-orm/core';
 import { VectorType } from 'src/types/VectorType';
 
+import { ScheduledTasks } from './ScheduledTask.entity';
 import { Users } from './User.entity';
 
 @Entity()
@@ -37,4 +38,7 @@ export class KnowledgeItem {
   createdAt?: Date = new Date();
   @Property({ type: 'timestamptz', onUpdate: () => new Date() })
   updatedAt?: Date = new Date();
+
+  @OneToMany(() => ScheduledTasks, (scheduledTask) => scheduledTask.knowledgeItem, { orphanRemoval: true })
+  scheduledTasks = new Collection<ScheduledTasks>(this);
 }

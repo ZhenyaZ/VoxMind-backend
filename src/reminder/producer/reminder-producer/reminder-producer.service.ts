@@ -3,6 +3,7 @@ import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { InjectQueue } from '@nestjs/bullmq';
 import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { DateTime } from 'luxon';
 import { ScheduledTasks } from 'src/entities/ScheduledTask.entity';
 import { NLPService } from 'src/nlp/nlp.service';
 import { UserService } from 'src/user/user.service';
@@ -69,7 +70,7 @@ export class ReminderProducerService {
     });
     await this.em.persist(task).flush();
     await job.updateData({ userId, message, taskId: task.id });
-    return job;
+    return { job, task };
   }
   async createManualScheduledTask(
     userId: string,
@@ -77,6 +78,7 @@ export class ReminderProducerService {
   ) {
     const user = await this.userService.findById(userId);
     if (!user) throw new NotFoundException('User not found');
+    const userTimezone = await this.userService.getUserTimezone(userId);
     const daysNum = data.days.map((day) => DAYS[day]);
     const pattern = `${data.minutes} ${data.hours} * * ${daysNum.join(',')}`;
     let job;
@@ -91,6 +93,7 @@ export class ReminderProducerService {
         {
           repeat: {
             pattern,
+            tz: userTimezone,
           },
         },
       );
@@ -109,9 +112,8 @@ export class ReminderProducerService {
       return task;
     } else {
       //* not repeated tasks
-      const endDate = new Date(data.date);
-      let currentDate = new Date();
-      const delay = endDate.getTime() - currentDate.getTime();
+      const endDateUtc = DateTime.fromISO(data.date, { zone: userTimezone }).toUTC();
+      const delay = endDateUtc.toMillis() - Date.now();
       if (delay < 0) {
         throw new BadRequestException(`Past moments can't be scheduled. Set a future time.`);
       }
@@ -145,6 +147,7 @@ export class ReminderProducerService {
     console.log(data);
     const user = await this.userService.findById(userId);
     if (!user) throw new NotFoundException('User not found');
+    const userTimezone = await this.userService.getUserTimezone(userId);
     const task = await this.scheduledTasks.findOne({ taskId: data.taskId, user: user });
     if (!task) throw new NotFoundException('Task not found');
     if (task.pattern) {
@@ -166,6 +169,7 @@ export class ReminderProducerService {
         {
           repeat: {
             pattern,
+            tz: userTimezone,
           },
         },
       );
@@ -178,9 +182,8 @@ export class ReminderProducerService {
       await job.updateData({ userId, message: data.message, taskId: task.id });
       return task;
     } else {
-      const endDate = new Date(data.date);
-      let currentDate = new Date();
-      const delay = endDate.getTime() - currentDate.getTime();
+      const endDateUtc = DateTime.fromISO(data.date, { zone: userTimezone }).toUTC();
+      const delay = endDateUtc.toMillis() - Date.now();
       if (delay < 0) {
         throw new BadRequestException(`Past moments can't be scheduled. Set a future time.`);
       }
