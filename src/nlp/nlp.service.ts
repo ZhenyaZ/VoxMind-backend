@@ -140,7 +140,11 @@ export class NLPService {
           const targetDate = DateTime.fromJSDate(new Date(classifiedAudio.dueDate), { zone: userTimezone }).toUTC();
           const delay = targetDate.toMillis() - Date.now();
           const scheduledMessage = await this.remindMessage(classifiedAudio.content);
-          const scheduledTask = await this.reminderProducerService.createScheduleRemind(user.id, `${scheduledMessage}`, delay);
+          const scheduledTask = await this.reminderProducerService.createScheduleRemind(
+            user.id,
+            `${scheduledMessage}`,
+            delay,
+          );
           scheduledTaskId = scheduledTask.task.id;
         }
         const embedding = await this.getEmbedding(classifiedAudio.content);

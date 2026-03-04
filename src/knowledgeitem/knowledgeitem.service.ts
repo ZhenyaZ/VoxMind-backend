@@ -1,6 +1,7 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { KnowledgeItem } from 'src/entities/KnowledgeItem.entity';
 import { ScheduledTasks } from 'src/entities/ScheduledTask.entity';
 import { Users } from 'src/entities/User.entity';
@@ -70,13 +71,22 @@ export class KnowledgeitemService {
     return items as { id: number; subject: string; content: string; type: string; distance: number; score: string }[];
   }
 
-  async getKnowledgeItems(userId: string) {
+  async getKnowledgeItems(userId: string): Promise<any[]> {
     const user = await this.usersRepository.findOne({ id: userId });
+    const userTimezone = user?.timezone;
     const items = await this.knowledgeItemRepository.find(
       { user: user },
-      { exclude: ['embedding', 'isQuestion', 'updatedAt', 'user', 'location', 'subject', 'dueDate'] },
+      { exclude: ['embedding', 'isQuestion', 'updatedAt', 'user', 'location', 'subject', 'scheduledTasks'] },
     );
-    return items;
+    let modifiedItems = items.map((item) => {
+      const dueDate = item.dueDate ? DateTime.fromJSDate(item.dueDate).setZone(userTimezone || 'UTC') : null;
+      return {
+        ...item,
+        dueDate: dueDate ? dueDate.toISO() : null,
+        scheduledTasks: '',
+      };
+    });
+    return modifiedItems;
   }
   async deleteKnowledgeItem(itemId: number) {
     const item = await this.knowledgeItemRepository.findOne({ id: itemId });
