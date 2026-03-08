@@ -302,7 +302,7 @@ Reference Context: "${dateContext}"
 
 === FIELDS SPECIFICATION (Strict JSON) ===
 1. type: "reminder" | "fact"
-2. subject: Topic (Dictionary form).
+2. subject: The core topic in the INPUT LANGUAGE (Dictionary form).
 3. location: Place or null.
 4. content: Original text, cleaned.
 5. isQuestion: boolean.
