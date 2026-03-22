@@ -11,7 +11,7 @@ import { REDIS } from './redis.constants';
       provide: REDIS,
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const isProd = configService.get<string>('NODE_ENV') === 'production';
+        const isProd = configService.get<string>('ENV') === 'prod';
 
         const redisUrl = isProd ? configService.get<string>('REDIS_URL_PROD') : configService.get<string>('REDIS_URL_DEV');
 
