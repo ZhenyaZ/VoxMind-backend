@@ -12,6 +12,9 @@ import { KnowledgeitemModule } from './knowledgeitem/knowledgeitem.module';
 import { NLPModule } from './nlp/nlp.module';
 import { ReminderModule } from './reminder/reminder.module';
 import { UserModule } from './user/user.module';
+import { PasswordResetModule } from './password-reset/password-reset.module';
+import { RedisModule } from './redis/redis.module';
+
 @Module({
   imports: [
     NLPModule,
@@ -19,6 +22,7 @@ import { UserModule } from './user/user.module';
     AuthModule,
     ConfigModule.forRoot({ isGlobal: true }),
     BullMQConfig,
+    RedisModule,
     MikroOrmModule.forRoot(),
     KnowledgeitemModule,
     ReminderModule,
@@ -27,6 +31,7 @@ import { UserModule } from './user/user.module';
         level: 'info',
       },
     }),
+    PasswordResetModule,
   ],
   controllers: [AppController],
   providers: [AppService],

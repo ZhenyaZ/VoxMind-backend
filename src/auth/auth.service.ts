@@ -46,12 +46,12 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.userService.findByEmail(loginDto.email);
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Incorrect email address or password');
     }
 
     const isValid = await bcrypt.compare(loginDto.password, user.password);
     if (!isValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Incorrect email address or password');
     }
     user.password = '';
     return this.issueTokens(user.id, user);

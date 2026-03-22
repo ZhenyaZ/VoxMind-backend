@@ -7,7 +7,7 @@ import { ReminderProducerService } from 'src/reminder/producer/reminder-producer
 
 import createUserDto from './dto/createUser.dto';
 import { UpdatePushTokenDto } from './dto/updatePushToken.dto';
-
+import * as bcrypt from 'bcrypt';
 @Injectable()
 export class UserService {
   constructor(
@@ -68,6 +68,13 @@ export class UserService {
       pushToken: data.pushToken,
       deviceName: data.deviceName,
     });
+  }
+
+  async updatePassword(id: string, newPassword: string) {
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+    const password = await bcrypt.hash(newPassword, 10);
+    await this.usersRepository.nativeUpdate({id: user.id}, {password: password});
   }
 
   async getUserTimezone(id: string) {
