@@ -28,7 +28,51 @@ import { UserModule } from './user/user.module';
     ReminderModule,
     LoggerModule.forRoot({
       pinoHttp: {
-        level: 'info',
+        level: process.env.ENV === 'production' ? 'info' : 'debug',
+
+        redact: {
+          paths: [
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'req.headers.set-cookie',
+            'req.body.password',
+            'req.body.accessToken',
+            'req.body.refreshToken',
+            'req.body.token',
+            'res.headers["set-cookie"]',
+          ],
+          censor: '[REDACTED]',
+        },
+
+        customProps: () => ({
+          service: 'backend',
+        }),
+
+        customSuccessMessage: () => 'request completed',
+        customErrorMessage: () => 'request failed',
+
+        serializers: {
+          req(req) {
+            return {
+              id: req.id,
+              method: req.method,
+              url: req.url,
+              remoteAddress: req.remoteAddress,
+              remotePort: req.remotePort,
+            };
+          },
+          res(res) {
+            return {
+              statusCode: res.statusCode,
+            };
+          },
+        },
+
+        customAttributeKeys: {
+          req: 'req',
+          res: 'res',
+          responseTime: 'responseTime',
+        },
       },
     }),
     PasswordResetModule,
