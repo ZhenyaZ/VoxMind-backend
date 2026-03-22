@@ -1,7 +1,8 @@
 import { Body, Controller, Post, UsePipes, ValidationPipe } from '@nestjs/common';
-import { PasswordResetService } from './password-reset.service';
+
 import { PasswordResetRequestDto } from './dto/password-reset-request.dto';
 import { PasswordResetVerifyDto } from './dto/password-reset-verify.dto';
+import { PasswordResetService } from './password-reset.service';
 
 @Controller('password-reset')
 @UsePipes(

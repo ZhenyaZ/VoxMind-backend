@@ -1,27 +1,19 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { createHash, randomBytes } from 'crypto';
 import Redis from 'ioredis';
+import { Resend } from 'resend';
 import { REDIS } from 'src/redis/redis.constants';
 import { UserService } from 'src/user/user.service';
-import nodemailer, { Transporter } from 'nodemailer';
-
 @Injectable()
 export class PasswordResetService {
-    private transporter: Transporter;
+  private resend: Resend;
   constructor(
     @Inject(REDIS) private readonly redis: Redis,
     private readonly userService: UserService,
+    private readonly configService: ConfigService,
   ) {
-    this.transporter = nodemailer.createTransport({
-        service: "porkbun",
-        host: 'smtp.porkbun.com',
-        auth: {
-            user: String(process.env.PORKBUN_EMAIL!),
-            pass: String(process.env.PORKBUN_PWD!)
-        },
-        secure: true,
-        port: Number(process.env.PORKBUN_PORT!)
-    });
+    this.resend = new Resend(this.configService.get<string>('RESEND_API'));
   }
 
   async sendCode(email: string) {
@@ -32,16 +24,15 @@ export class PasswordResetService {
     const code = randomBytes(4).toString('hex').toUpperCase();
     const hash = createHash('sha256').update(code).digest('hex');
     const expirationMinutes = 5;
-    const { html, text } = this.buildPasswordResetEmailTemplate(code, expirationMinutes);
+    const { html } = this.buildPasswordResetEmailTemplate(code, expirationMinutes);
 
-    await this.transporter.sendMail({
-        from: String(process.env.PORKBUN_EMAIL!),
-        to: email,
-        subject: 'Voxly - Password Recovery Code',
-        replyTo: 'support@zhenyaz.dev',
-        text,
-        html,
-    })
+    await this.resend.emails.send({
+      from: `Voxly Team <${String(process.env.PORKBUN_EMAIL!)}>`,
+      to: [email],
+      subject: 'Voxly - Password Recovery Code',
+      replyTo: 'support@zhenyaz.dev',
+      html,
+    });
     await this.redis.set(
       `user:pwd-reset:${user?.id}`,
       JSON.stringify({
@@ -50,9 +41,8 @@ export class PasswordResetService {
         timestamp: new Date().getTime() + 300000,
       }),
       'EX',
-      60*5,
+      60 * 5,
     );
-    
   }
 
   private buildPasswordResetEmailTemplate(code: string, expirationMinutes: number): { html: string; text: string } {

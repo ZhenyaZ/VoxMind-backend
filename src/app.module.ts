@@ -10,10 +10,10 @@ import { AuthModule } from './auth/auth.module';
 import { BullMQConfig } from './config/bullmq.config';
 import { KnowledgeitemModule } from './knowledgeitem/knowledgeitem.module';
 import { NLPModule } from './nlp/nlp.module';
-import { ReminderModule } from './reminder/reminder.module';
-import { UserModule } from './user/user.module';
 import { PasswordResetModule } from './password-reset/password-reset.module';
 import { RedisModule } from './redis/redis.module';
+import { ReminderModule } from './reminder/reminder.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [

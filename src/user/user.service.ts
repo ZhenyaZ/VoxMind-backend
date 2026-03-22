@@ -1,13 +1,13 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { Users } from 'src/entities/User.entity';
 import { UserPushToken } from 'src/entities/UserPushToken.entity';
 import { ReminderProducerService } from 'src/reminder/producer/reminder-producer/reminder-producer.service';
 
 import createUserDto from './dto/createUser.dto';
 import { UpdatePushTokenDto } from './dto/updatePushToken.dto';
-import * as bcrypt from 'bcrypt';
 @Injectable()
 export class UserService {
   constructor(
@@ -74,7 +74,7 @@ export class UserService {
     const user = await this.findById(id);
     if (!user) throw new NotFoundException('User not found');
     const password = await bcrypt.hash(newPassword, 10);
-    await this.usersRepository.nativeUpdate({id: user.id}, {password: password});
+    await this.usersRepository.nativeUpdate({ id: user.id }, { password: password });
   }
 
   async getUserTimezone(id: string) {
