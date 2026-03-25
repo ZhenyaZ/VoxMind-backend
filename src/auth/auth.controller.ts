@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 
 import { AuthService } from './auth.service';
@@ -6,11 +7,11 @@ import { LoginDto } from './dto/loginDto.dto';
 import { RegisterDto } from './dto/registerDto.dto';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { RefreshJwtAuthGuard } from './guard/refresh-jwt.guard';
-
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
   async register(@Body() registerDto: RegisterDto, @Res() res) {
     const tokens = await this.authService.register(registerDto);
@@ -18,6 +19,7 @@ export class AuthController {
     res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true, secure: true, sameSite: 'none' });
     return res.sendStatus(201);
   }
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   async login(@Body() loginDto: LoginDto, @Res() res) {
     const tokens = await this.authService.login(loginDto);
@@ -25,6 +27,7 @@ export class AuthController {
     res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true, secure: true, sameSite: 'none' });
     return res.send({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, user: tokens.user });
   }
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Get('refresh')
   @UseGuards(RefreshJwtAuthGuard)
   async refreshTokens(@Req() req, @Res() res) {
@@ -34,6 +37,7 @@ export class AuthController {
     return res.status(200).send({ accessToken: tokens.accessToken });
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   async logout(@Req() req, @Res() res: Response, @Body() body: { pushToken: string }) {

@@ -2,6 +2,7 @@ import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { MikroORM } from '@mikro-orm/postgresql';
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
 import { AppController } from './app.controller';
@@ -26,6 +27,14 @@ import { UserModule } from './user/user.module';
     MikroOrmModule.forRoot(),
     KnowledgeitemModule,
     ReminderModule,
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 60,
+        },
+      ],
+    }),
     LoggerModule.forRoot({
       pinoHttp: {
         level: process.env.ENV === 'production' ? 'info' : 'debug',
