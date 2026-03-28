@@ -2,6 +2,7 @@ import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { MikroORM } from '@mikro-orm/postgresql';
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
@@ -15,6 +16,7 @@ import { PasswordResetModule } from './password-reset/password-reset.module';
 import { RedisModule } from './redis/redis.module';
 import { ReminderModule } from './reminder/reminder.module';
 import { UserModule } from './user/user.module';
+import { CloudflareThrottlerGuard } from './utils/throttler.guard';
 
 @Module({
   imports: [
@@ -66,7 +68,8 @@ import { UserModule } from './user/user.module';
               id: req.id,
               method: req.method,
               url: req.url,
-              remoteAddress: req.remoteAddress,
+              remoteAddress:
+                req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for']?.split(',')[0] || req.remoteAddress,
               remotePort: req.remotePort,
             };
           },
@@ -87,7 +90,7 @@ import { UserModule } from './user/user.module';
     PasswordResetModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: CloudflareThrottlerGuard }],
 })
 export class AppModule implements OnModuleInit {
   constructor(private readonly orm: MikroORM) {}
