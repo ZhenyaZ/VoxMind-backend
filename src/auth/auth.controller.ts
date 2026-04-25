@@ -39,7 +39,6 @@ export class AuthController {
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
   async logout(@Req() req, @Res() res: Response, @Body() body: { pushToken: string }) {
     res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'none' });
     res.status(200).send({ message: 'Successfully logout' });
