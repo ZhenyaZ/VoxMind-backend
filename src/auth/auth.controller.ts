@@ -5,7 +5,6 @@ import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/loginDto.dto';
 import { RegisterDto } from './dto/registerDto.dto';
-import { JwtAuthGuard } from './guard/jwt-auth.guard';
 import { RefreshJwtAuthGuard } from './guard/refresh-jwt.guard';
 @Controller('auth')
 export class AuthController {
@@ -34,12 +33,15 @@ export class AuthController {
     const tokens = await this.authService.refreshTokens(req.user.id);
     res.cookie('accessToken', tokens.accessToken, { httpOnly: true, secure: true, sameSite: 'none' });
     res.cookie('refreshToken', tokens.refreshToken, { httpOnly: true, secure: true, sameSite: 'none' });
-    return res.status(200).send({ accessToken: tokens.accessToken });
+    return res.status(200).send({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken });
   }
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('logout')
-  async logout(@Req() req, @Res() res: Response, @Body() body: { pushToken: string }) {
+  async logout(@Res() res: Response, @Body() body: { pushToken?: string }) {
+    if (body.pushToken) {
+      await this.authService.removePushToken(body.pushToken);
+    }
     res.clearCookie('refreshToken', { httpOnly: true, secure: true, sameSite: 'none' });
     res.status(200).send({ message: 'Successfully logout' });
   }

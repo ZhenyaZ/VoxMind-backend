@@ -82,4 +82,8 @@ export class UserService {
     if (!user) throw new NotFoundException('User not found');
     return user.timezone;
   }
+
+  async removePushToken(pushToken: string): Promise<void> {
+    await this.userPushTokenRepository.nativeDelete({ pushToken });
+  }
 }

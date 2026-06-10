@@ -80,4 +80,8 @@ export class AuthService {
       refreshToken,
     };
   }
+
+  async removePushToken(pushToken: string): Promise<void> {
+    await this.userService.removePushToken(pushToken);
+  }
 }
